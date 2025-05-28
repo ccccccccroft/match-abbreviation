@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>综合缩写匹配游戏</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --warning-color: #f39c12;
+            --text-color: #2c3e50;
+            --light-text: #7f8c8d;
+            --bg-color: #f5f5f5;
+            --card-bg: white;
+            --item-bg: #ecf0f1;
+            --selected-bg: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
+        }
+        
+        h1 {
+            color: var(--text-color);
+            margin: 15px 0;
+            text-align: center;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+        }
+        
+        .mobile-warning {
+            display: none;
+            background-color: var(--warning-color);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .progress-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 10px 0;
+            width: 100%;
+        }
+        
+        .level-progress {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 5px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .level-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .level-circle.active {
+            background-color: var(--primary-color);
+        }
+        
+        .level-circle.completed {
+            background-color: var(--success-color);
+        }
+        
+        .score-board {
+            background-color: var(--text-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            margin: 10px 0;
+            font-size: 1.1em;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .score {
+            font-weight: bold;
+            color: #f1c40f;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .column {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 12px;
+            width: 100%;
+            max-width: 350px;
+            min-width: 250px;
+            flex: 1;
+        }
+        
+        .column h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 8px;
+            text-align: center;
+            font-size: 1.2rem;
+            margin: 0 0 10px 0;
+        }
+        
+        .items-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .item {
+            background-color: var(--item-bg);
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            min-height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .item:hover {
+            background-color: #d6eaf8;
+            transform: translateY(-2px);
+        }
+        
+        .item.selected {
+            background-color: var(--selected-bg);
+            color: white;
+        }
+        
+        .item.correct {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .item.incorrect {
+            background-color: var(--error-color);
+            color: white;
+        }
+        
+        .example {
+            font-size: 0.85em;
+            color: var(--light-text);
+            font-style: italic;
+            margin-top: 5px;
+            line-height: 1.3;
+        }
+        
+        .item.selected .example, 
+        .item.correct .example, 
+        .item.incorrect .example {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .symbol {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .category-tag {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            font-size: 0.6em;
+            padding: 2px 4px;
+            border-radius: 3px;
+            background-color: rgba(0,0,0,0.1);
+        }
+        
+        .message {
+            margin: 10px 0;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 90%;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        
+        .message.show {
+            opacity: 1;
+        }
+        
+        .success {
+            background-color: #d5f5e3;
+            color: #27ae60;
+        }
+        
+        .error {
+            background-color: #fadbd8;
+            color: #e74c3c;
+        }
+        
+        .hint {
+            background-color: #fdebd0;
+            color: #d35400;
+        }
+        
+        .buttons-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 15px 0;
+            width: 100%;
+        }
+        
+        .btn {
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            min-width: 120px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-danger {
+            background-color: var(--error-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            display: none;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .completion-message {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--success-color);
+            display: none;
+        }
+        
+        @media screen and (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .column {
+                max-width: 100%;
+                min-width: unset;
+            }
+            
+            .mobile-warning {
+                display: block;
+            }
+            
+            .item {
+                min-height: 45px;
+                padding: 8px;
+            }
+            
+            .example {
+                font-size: 0.8em;
+            }
+        }
+        
+        @media screen and (max-width: 480px) {
+            .level-circle {
+                width: 25px;
+                height: 25px;
+                font-size: 0.8em;
+            }
+            
+            .btn {
+                padding: 6px 12px;
+                min-width: 100px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-warning">为获得最佳体验，请将手机横屏使用</div>
+    <h1>综合缩写匹配游戏</h1>
+    
+    <div class="progress-container">
+        <div class="level-progress" id="levelProgress"></div>
+        <div class="score-board">
+            得分: <span class="score">0</span>
+        </div>
+    </div>
+    
+    <div class="message"></div>
+    
+    <div class="game-container">
+        <div class="column">
+            <h2>缩写/符号/短形式</h2>
+            <div class="items-container" id="abbreviations"></div>
+        </div>
+        <div class="column">
+            <h2>完整形式/含义</h2>
+            <div class="items-container" id="full-forms"></div>
+        </div>
+    </div>
+    
+    <div class="completion-message" id="completionMessage"></div>
+    
+    <div class="buttons-container">
+        <button class="btn btn-primary" id="nextLevelBtn" onclick="loadNextLevel()">下一关</button>
+        <button class="btn btn-success" id="restartBtn" onclick="restartGame()">重新开始</button>
+        <button class="btn btn-danger" id="resetBtn" onclick="resetGame()">重置游戏</button>
+    </div>
+
+    <script>
+        // 游戏数据 - 整合所有图片的内容
+        const allGameData = [
+            // 第一张图片内容
+            { short: "b/c", full: "because", example: "Late b/c traffic", category: "缩写" },
+            { short: "esp.", full: "especially", example: "Important, esp. for teens", category: "缩写" },
+            { short: "vs.", full: "versus", example: "Team A vs. Team B", category: "缩写" },
+            { short: "gov.", full: "government", example: "Gov. policy changed", category: "缩写" },
+            { short: "info.", full: "information", example: "Get more info.", category: "缩写" },
+            { short: "max.", full: "maximum", example: "Temp. reaches max. (30°C)", category: "缩写" },
+            { short: "min.", full: "minimum", example: "Min. 2 days required", category: "缩写" },
+            { short: "req.", full: "required", example: "Docs req. for application", category: "缩写" },
+            { short: "env.", full: "environment", example: "Env. protection laws", category: "缩写" },
+            { short: "econ.", full: "economics", example: "Econ. crisis", category: "缩写" },
+            { short: "sci.", full: "science", example: "Sci. research", category: "缩写" },
+            { short: "hist.", full: "history", example: "Hist. event in 1990s", category: "缩写" },
+            { short: "tech.", full: "technology", example: "Tech. innovation", category: "缩写" },
+            { short: "edu.", full: "education", example: "Edu. reform needed", category: "缩写" },
+            { short: "yr", full: "year", example: "Next yr's plan", category: "缩写" },
+            { short: "mo.", full: "month", example: "6 mo. project", category: "缩写" },
+            { short: "wk", full: "week", example: "Due in 2 wks", category: "缩写" },
+            { short: "hr", full: "hour", example: "3 hrs meeting", category: "缩写" },
+            { short: "sec.", full: "second", example: "Wait 30 sec.", category: "缩写" },
+            
+            // 第二张图片内容（符号）
+            { short: "&", full: "and", example: "bread & butter", category: "符号" },
+            { short: "+", full: "and", example: "salt + pepper", category: "符号" },
+            { short: "/", full: "or", example: "yes/no", category: "符号" },
+            { short: "$", full: "dollars/money", example: "It costs $10", category: "符号" },
+            { short: "→", full: "leads to/results in", example: "A → B", category: "符号" },
+            { short: "=", full: "means/equals", example: "1+1 = 2", category: "符号" },
+            { short: ">", full: "more (than)", example: "5 > 3", category: "符号" },
+            { short: "<", full: "less (than)", example: "3 < 5", category: "符号" },
+            { short: "↑", full: "increase", example: "Prices ↑", category: "符号" },
+            { short: "↓", full: "decrease", example: "Temperature ↓", category: "符号" },
+            { short: "%", full: "per cent", example: "50% off", category: "符号" },
+            { short: "w/", full: "with (something)", example: "coffee w/ milk", category: "符号" },
+            { short: "e.g.", full: "for example", example: "Fruits, e.g., apples", category: "符号" },
+            { short: "i.e.", full: "that is (to say)", example: "The best, i.e., you", category: "符号" },
+            { short: "a.m.", full: "in the morning", example: "8 a.m.", category: "符号" },
+            { short: "p.m.", full: "in the afternoon/evening", example: "5 p.m.", category: "符号" },
+            { short: "no.", full: "number", example: "No. 1", category: "符号" },
+            
+            // 第三张图片内容（音节缩写）
+            { short: "min", full: "minute", example: "Wait 5 min", category: "音节" },
+            { short: "Eng", full: "English", example: "Eng class", category: "音节" },
+            { short: "SOC", full: "society", example: "SOC studies", category: "音节" },
+            { short: "rest", full: "restaurant", example: "Meet at rest", category: "音节" },
+            { short: "grp", full: "group", example: "Study grp", category: "音节" },
+            { short: "tkt", full: "ticket", example: "Buy tkt", category: "音节" },
+            { short: "swim", full: "swimming", example: "Swim team", category: "音节" },
+            { short: "walk", full: "walking", example: "Walk club", category: "音节" },
+            { short: "govt", full: "government", example: "Govt official", category: "音节" },
+            
+            // 第四张图片内容（EXAM TIP）
+            { short: "HK", full: "Hong Kong", example: "HK govt", category: "缩写" },
+            { short: "bk", full: "book", example: "Read bk", category: "音节" },
+            { short: "usu", full: "usually", example: "usu arrive late", category: "音节" },
+            { short: "solutn", full: "solution", example: "Find solutn", category: "缩写规则" },
+            { short: "relatn", full: "relation", example: "Good relatn", category: "缩写规则" },
+            { short: "experimt", full: "experiment", example: "Science experimt", category: "缩写规则" },
+            { short: "mgmt", full: "management", example: "Project mgmt", category: "缩写规则" },
+            { short: "basemt", full: "basement", example: "Store in basemt", category: "缩写规则" },
+            
+            // 第五张图片内容（符号和缩写）
+            { short: ":", full: "to be", example: "biggest prob: lack of gd software", category: "符号" },
+            { short: "'", full: "missing letters", example: "mul'ple, conclu', t'port", category: "符号" },
+            { short: "–", full: "relationship between events", example: "Went to mtg – began at 11", category: "符号" },
+            { short: "1920s", full: "1920-1929", example: "Events in 1920s", category: "缩写" },
+            { short: "1st", full: "first", example: "1st place", category: "缩写" },
+            { short: "2nd", full: "second", example: "2nd floor", category: "缩写" },
+            { short: "3rd", full: "third", example: "3rd attempt", category: "缩写" },
+            { short: "am", full: "morning", example: "8am meeting", category: "缩写" },
+            { short: "approx", full: "approximately", example: "approx 100 people", category: "缩写" },
+            { short: "b4", full: "before", example: "See you b4 5", category: "缩写" },
+            { short: "c.", full: "about/approximately", example: "c. 1900", category: "缩写" },
+            { short: "c.f.", full: "compare", example: "c.f. page 10", category: "缩写" },
+            { short: "CWB", full: "Causeway Bay", example: "Shop in CWB", category: "缩写" },
+            { short: "dept", full: "department", example: "HR dept", category: "缩写" },
+            { short: "diff", full: "difficult/difference", example: "No diff", category: "缩写" },
+            { short: "etc.", full: "et cetera", example: "pens, paper, etc.", category: "缩写" },
+            { short: "esp", full: "especially", example: "Important, esp for kids", category: "缩写" },
+            { short: "excl", full: "exclude", example: "All excl John", category: "缩写" },
+            { short: "gov't", full: "government", example: "Gov't policy", category: "缩写" },
+            { short: "hv", full: "have", example: "I hv question", category: "缩写" },
+            { short: "imp", full: "important", example: "Very imp", category: "缩写" },
+            { short: "incl", full: "including", example: "All incl me", category: "缩写" },
+            { short: "info", full: "information", example: "Get more info", category: "缩写" },
+            { short: "k", full: "thousand", example: "5k = 5000", category: "缩写" },
+            { short: "Kln", full: "Kowloon", example: "Live in Kln", category: "缩写" },
+            { short: "lang", full: "language", example: "Eng lang", category: "缩写" },
+            { short: "ltd", full: "limited", example: "Co. ltd", category: "缩写" },
+            { short: "mil", full: "million", example: "5mil people", category: "缩写" },
+            { short: "MK", full: "Mong Kok", example: "Shop in MK", category: "缩写" },
+            { short: "N.B.", full: "note", example: "N.B. important point", category: "缩写" },
+            { short: "nth", full: "nothing", example: "Know nth", category: "缩写" },
+            { short: "p.", full: "page", example: "See p. 5", category: "缩写" },
+            { short: "prob", full: "problem", example: "No prob", category: "缩写" },
+            { short: "probs", full: "problems", example: "Many probs", category: "缩写" },
+            { short: "pt", full: "point", example: "Main pt", category: "缩写" },
+            { short: "pwd", full: "password", example: "Enter pwd", category: "缩写" },
+            { short: "Q.", full: "question", example: "Q. 5", category: "缩写" },
+            { short: "rd", full: "road", example: "Main rd", category: "缩写" },
+            { short: "re:", full: "regarding", example: "Re: your email", category: "缩写" },
+            { short: "ref", full: "reference", example: "See ref 5", category: "缩写" },
+            { short: "sb", full: "somebody", example: "Ask sb", category: "缩写" },
+            { short: "s/o", full: "someone", example: "See s/o", category: "缩写" },
+            { short: "st", full: "street", example: "Main st", category: "缩写" },
+            { short: "s/t", full: "something", example: "Do s/t", category: "缩写" },
+            { short: "sis", full: "students", example: "All sis", category: "缩写" },
+            { short: "tho", full: "though", example: "Even tho", category: "缩写" },
+            { short: "thru", full: "through", example: "Go thru", category: "缩写" },
+            { short: "TST", full: "Tsim Sha Tsui", example: "Meet in TST", category: "缩写" },
+            { short: "UK", full: "United Kingdom", example: "From UK", category: "缩写" },
+            { short: "US", full: "United States", example: "In US", category: "缩写" },
+            { short: "v.", full: "very", example: "v. good", category: "缩写" },
+            { short: "viz.", full: "namely", example: "Two viz. A & B", category: "缩写" },
+            { short: "w/o", full: "without", example: "Go w/o me", category: "缩写" },
+            { short: "w/i", full: "within", example: "w/i 5 days", category: "缩写" },
+            { short: "x", full: "times", example: "2x speed", category: "符号" },
+            { short: ":'", full: "because", example: "Late :' traffic", category: "符号" },
+            { short: "✓", full: "correct", example: "Answer ✓", category: "符号" },
+            { short: "×", full: "wrong", example: "Answer ×", category: "符号" },
+            { short: "@", full: "at", example: "Meet @5", category: "符号" },
+            { short: "\"", full: "ditto", example: "Same \"", category: "符号" },
+            { short: "≠", full: "not equal", example: "A ≠ B", category: "符号" },
+            { short: "2", full: "to/two/too", example: "Go 2 school", category: "符号" },
+            { short: "4", full: "for/four", example: "Good 4 you", category: "符号" },
+            { short: "#", full: "number", example: "Issue #5", category: "符号" },
+            { short: "Δ", full: "change", example: "Δ temp", category: "符号" },
+            { short: "S", full: "dollar", example: "Cost S10", category: "符号" }
+        ];
+
+        // 游戏状态
+        let score = 0;
+        let selectedItem = null;
+        let matchedPairs = 0;
+        let currentLevel = 0;
+        const LEVELS = 5;
+        const QUESTIONS_PER_LEVEL = 5;
+        let usedQuestions = []; // 记录所有已使用的题目(short)
+        let currentGameQuestions = []; // 当前游戏的所有题目
+        let currentLevelQuestions = []; // 当前关卡的题目
+        let gameCompleted = false;
+
+        // DOM元素
+        const abbreviationsContainer = document.getElementById('abbreviations');
+        const fullFormsContainer = document.getElementById('full-forms');
+        const levelProgressContainer = document.getElementById('levelProgress');
+        const nextLevelBtn = document.getElementById('nextLevelBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const completionMessage = document.getElementById('completionMessage');
+
+        // 初始化游戏
+        function initGame() {
+            score = 0;
+            currentLevel = 0;
+            gameCompleted = false;
+            updateScore();
+            setupLevelProgress();
+            
+            // 为整个游戏选择25个不重复的题目
+            selectQuestionsForGame();
+            
+            // 加载第一关
+            loadLevel(currentLevel);
+            
+            nextLevelBtn.style.display = 'none';
+            restartBtn.style.display = 'none';
+            completionMessage.style.display = 'none';
+        }
+        
+        // 为整个游戏选择25个不重复的题目
+        function selectQuestionsForGame() {
+            // 过滤掉之前使用过的题目
+            const availableQuestions = allGameData.filter(q => !usedQuestions.includes(q.short));
+            
+            // 如果剩余题目不足25个，重置usedQuestions
+            if (availableQuestions.length < 25) {
+                usedQuestions = [];
+            }
+            
+            // 从题库中随机选择25个题目
+            currentGameQuestions = shuffleArray([...allGameData])
+                .filter(q => !usedQuestions.includes(q.short))
+                .slice(0, 25);
+            
+            // 记录已使用的题目
+            currentGameQuestions.forEach(q => usedQuestions.push(q.short));
+        }
+        
+        // 设置关卡进度显示
+        function setupLevelProgress() {
+            levelProgressContainer.innerHTML = '';
+            for (let i = 0; i < LEVELS; i++) {
+                const circle = document.createElement('div');
+                circle.className = 'level-circle';
+                if (i === 0) circle.classList.add('active');
+                circle.textContent = i + 1;
+                levelProgressContainer.appendChild(circle);
+            }
+        }
+        
+        // 更新关卡进度
+        function updateLevelProgress() {
+            const circles = document.querySelectorAll('.level-circle');
+            circles.forEach((circle, index) => {
+                circle.classList.remove('active', 'completed');
+                if (index < currentLevel) {
+                    circle.classList.add('completed');
+                } else if (index === currentLevel) {
+                    circle.classList.add('active');
+                }
+            });
+        }
+        
+        // 加载指定关卡
+        function loadLevel(level) {
+            // 重置状态
+            matchedPairs = 0;
+            selectedItem = null;
+            abbreviationsContainer.innerHTML = '';
+            fullFormsContainer.innerHTML = '';
+            
+            // 更新UI
+            updateLevelProgress();
+            nextLevelBtn.style.display = 'none';
+            
+            // 获取当前关卡的题目
+            const startIdx = level * QUESTIONS_PER_LEVEL;
+            currentLevelQuestions = currentGameQuestions.slice(startIdx, startIdx + QUESTIONS_PER_LEVEL);
+            
+            // 创建题目
+            createQuestions(currentLevelQuestions);
+            
+            // 显示消息
+            showMessage(`第 ${level + 1} 关: 匹配以下缩写`, 'success');
+        }
+        
+        // 创建题目
+        function createQuestions(questions) {
+            // 创建缩写项
+            questions.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item abbreviation';
+                div.dataset.short = item.short;
+                div.dataset.full = item.full;
+                
+                if (item.category === "符号") {
+                    div.innerHTML = `<span class="symbol">${item.short}</span><div class="example">${item.example}</div><span class="category-tag">${item.category}</span>`;
+                } else {
+                    div.innerHTML = `<strong>${item.short}</strong><div class="example">${item.example}</div><span class="category-tag">${item.category}</span>`;
+                }
+                
+                div.addEventListener('click', handleAbbreviationClick);
+                abbreviationsContainer.appendChild(div);
+            });
+            
+            // 创建全称项（确保顺序不同）
+            const fullFormsOrder = shuffleArray([...questions]);
+            
+            fullFormsOrder.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item full-form';
+                div.dataset.full = item.full;
+                div.innerHTML = `${item.full}<span class="category-tag">${item.category}</span>`;
+                div.addEventListener('click', handleFullFormClick);
+                fullFormsContainer.appendChild(div);
+            });
+        }
+        
+        // 处理缩写点击
+        function handleAbbreviationClick(e) {
+            if (e.currentTarget.classList.contains('correct')) return;
+            
+            clearSelection();
+            
+            e.currentTarget.classList.add('selected');
+            selectedItem = {
+                type: 'abbreviation',
+                element: e.currentTarget,
+                full: e.currentTarget.dataset.full
+            };
+        }
+        
+        // 处理全称点击
+        function handleFullFormClick(e) {
+            if (e.currentTarget.classList.contains('correct')) return;
+            
+            if (!selectedItem) {
+                showMessage('请先选择一个缩写/符号/短形式', 'error');
+                return;
+            }
+            
+            if (e.currentTarget.dataset.full === selectedItem.full) {
+                // 匹配成功
+                e.currentTarget.classList.add('correct');
+                selectedItem.element.classList.add('correct');
+                score += 10;
+                matchedPairs++;
+                updateScore();
+                showMessage('匹配正确！+10分', 'success');
+                
+                // 检查当前关卡是否完成
+                if (matchedPairs === QUESTIONS_PER_LEVEL) {
+                    if (currentLevel < LEVELS - 1) {
+                        nextLevelBtn.style.display = 'block';
+                        showMessage(`恭喜完成第 ${currentLevel + 1} 关！`, 'success');
+                    } else {
+                        gameCompleted = true;
+                        completionMessage.textContent = `恭喜！你完成了所有关卡！最终得分: ${score}`;
+                        completionMessage.style.display = 'block';
+                        restartBtn.style.display = 'block';
+                        nextLevelBtn.style.display = 'none';
+                    }
+                }
+            } else {
+                // 匹配失败
+                e.currentTarget.classList.add('incorrect');
+                selectedItem.element.classList.add('incorrect');
+                score = Math.max(0, score - 5);
+                updateScore();
+                
+                const hint = getHint(selectedItem.full);
+                showMessage(`匹配错误！-5分。提示: ${hint}`, 'hint');
+                
+                setTimeout(() => {
+                    e.currentTarget.classList.remove('incorrect');
+                    selectedItem.element.classList.remove('incorrect');
+                    selectedItem = null;
+                }, 1500);
+            }
+            
+            selectedItem = null;
+        }
+        
+        // 加载下一关
+        function loadNextLevel() {
+            currentLevel++;
+            loadLevel(currentLevel);
+        }
+        
+        // 重新开始游戏（使用剩余题目）
+        function restartGame() {
+            gameCompleted = false;
+            currentLevel = 0;
+            
+            // 为整个游戏选择25个不重复的题目
+            selectQuestionsForGame();
+            
+            loadLevel(currentLevel);
+            restartBtn.style.display = 'none';
+            completionMessage.style.display = 'none';
+        }
+        
+        // 重置游戏（完全重新开始）
+        function resetGame() {
+            initGame();
+            showMessage('游戏已重置！', 'success');
+        }
+        
+        // 清除选择
+        function clearSelection() {
+            if (selectedItem) {
+                selectedItem.element.classList.remove('selected');
+                selectedItem = null;
+            }
+        }
+        
+        // 更新分数显示
+        function updateScore() {
+            document.querySelector('.score').textContent = score;
+        }
+        
+        // 显示消息
+        function showMessage(text, type) {
+            const messageEl = document.querySelector('.message');
+            messageEl.textContent = text;
+            messageEl.className = 'message show ' + type;
+            
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 获取提示
+        function getHint(fullForm) {
+            const hints = {
+                // 原有提示...
+                // 添加新提示...
+                'Hong Kong': '中国特别行政区',
+                'book': '阅读材料',
+                'usually': '通常地',
+                'solution': '解决问题的方法',
+                'relation': '关系',
+                'experiment': '科学实验',
+                'management': '管理',
+                'basement': '地下室',
+                'to be': '动词，表示是',
+                'missing letters': '省略的字母',
+                'relationship between events': '事件间的关系',
+                '1920-1929': '20世纪20年代',
+                'first': '第一',
+                'second': '第二',
+                'third': '第三',
+                'morning': '上午',
+                'approximately': '大约',
+                'before': '在...之前',
+                'about/approximately': '大约',
+                'compare': '比较',
+                'Causeway Bay': '铜锣湾',
+                'department': '部门',
+                'difficult/difference': '困难/不同',
+                'et cetera': '等等',
+                'exclude': '排除',
+                'have': '有',
+                'important': '重要的',
+                'thousand': '千',
+                'Kowloon': '九龙',
+                'language': '语言',
+                'limited': '有限的',
+                'million': '百万',
+                'Mong Kok': '旺角',
+                'note': '注意',
+                'nothing': '没有东西',
+                'page': '页',
+                'problem': '问题',
+                'point': '点',
+                'password': '密码',
+                'question': '问题',
+                'road': '路',
+                'regarding': '关于',
+                'reference': '参考',
+                'somebody': '某人',
+                'someone': '某人',
+                'street': '街',
+                'something': '某事',
+                'students': '学生',
+                'though': '虽然',
+                'through': '通过',
+                'Tsim Sha Tsui': '尖沙咀',
+                'United Kingdom': '英国',
+                'United States': '美国',
+                'very': '非常',
+                'namely': '即',
+                'without': '没有',
+                'within': '在...内',
+                'times': '次',
+                'correct': '正确的',
+                'wrong': '错误的',
+                'at': '在',
+                'ditto': '同上',
+                'not equal': '不等于',
+                'to/two/too': '到/二/也',
+                'for/four': '为/四',
+                'number': '数字',
+                'change': '变化',
+                'dollar': '美元'
+            };
+            return hints[fullForm] || '想想这个词的常见用法';
+        }
+        
+        // 数组洗牌函数
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+        
+        // 检测移动设备
+        function detectMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        // 初始化游戏
+        window.onload = function() {
+            initGame();
+            if (detectMobile() && window.innerWidth < window.innerHeight) {
+                document.querySelector('.mobile-warning').style.display = 'block';
+            }
+        };
+        
+        // 响应屏幕方向变化
+        window.addEventListener('resize', function() {
+            if (detectMobile()) {
+                if (window.innerWidth < window.innerHeight) {
+                    document.querySelector('.mobile-warning').style.display = 'block';
+                } else {
+                    document.querySelector('.mobile-warning').style.display = 'none';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
